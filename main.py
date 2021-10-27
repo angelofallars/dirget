@@ -21,7 +21,6 @@ def get_git_ignore(directory: str) -> list[str] | None:
     git_ignore = []
 
     if os.path.exists(git_ignore_path):
-        print(f".gitignore detected: {git_ignore_path}")
         git_ignore_raw = open(git_ignore_path).readlines()
 
         for i in range(len(git_ignore_raw)):
@@ -39,26 +38,29 @@ def get_git_ignore(directory: str) -> list[str] | None:
         return None
 
 
+def fetch_git_rootdir(relative_directory: str = "./") -> str | None:
+    directory_files = os.listdir(relative_directory)
+    absolute_directory = os.path.abspath(relative_directory)
+
+    if ".git" in directory_files:
+        return relative_directory
+    elif absolute_directory == '/':  # '/' = the root dir in Unix-based systems
+        return None
+    else:
+        return fetch_git_rootdir(relative_directory + "../")
+
+
 def main() -> int:
-    current_dir = "./"
-    current_dir_files = os.listdir(current_dir)
+    git_rootdir = fetch_git_rootdir()
 
-    # Search up until a folder with .git is found
-    while ".git" not in current_dir_files:
-        # Go up one directory
-        current_dir += "../"
+    if git_rootdir is None:
+        stderr.write("ERROR: You are not in a git repository.\n")
+        return 1
 
-        current_dir_files = os.listdir(current_dir)
-
-        if os.path.abspath(current_dir) == '/':
-            stderr.write("ERROR: You are not in a git repository.\n")
-            return 1
-
-    # Get the .gitignore file if it exists
-    git_ignore = get_git_ignore(current_dir)
+    git_ignore = get_git_ignore(git_rootdir)
 
     # List all files from the current git directory recursively
-    for pwd, dirs, files in os.walk(current_dir, topdown=False):
+    for pwd, dirs, files in os.walk(git_rootdir, topdown=False):
 
         if path_has_hidden_dir(pwd):
             continue
@@ -72,8 +74,6 @@ def main() -> int:
             if git_ignore is not None:
                 for ignore_file in git_ignore:
                     if ignore_file in current_file_dir:
-                        print(f"Hidden file: {current_file_dir}\n \
- Ignore file was '{ignore_file}'")
                         file_is_hidden = True
                         break
 
