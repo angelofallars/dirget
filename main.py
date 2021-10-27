@@ -7,7 +7,7 @@ from sys import stderr
 
 
 def path_has_hidden_dir(directory: str) -> bool:
-    hidden_dir_regex = re.compile(r".*/\.[^/\.].*")
+    hidden_dir_regex = re.compile(r"(.*/\.[^/\.].*|^\.)")
     if hidden_dir_regex.match(directory):
         return True
     else:
@@ -62,24 +62,25 @@ def main() -> int:
     # List all files from the current git directory recursively
     for pwd, dirs, files in os.walk(git_rootdir, topdown=False):
 
-        for name in files:
+        for file_name in files:
             # [2:] index to remove ./ in start of file
-            current_file_dir = os.path.join(pwd, name)[2:]
-            file_is_hidden = False
+            current_file = os.path.join(pwd, file_name)[2:]
+            file_in_git_ignore = False
 
             # Ignore files listed in .gitignore
             if git_ignore is not None:
-                for ignore_file in git_ignore:
-                    if ignore_file in current_file_dir:
-                        file_is_hidden = True
+                for pattern in git_ignore:
+                    if pattern in current_file:
+                        file_in_git_ignore = True
                         break
 
-                if file_is_hidden:
+                if file_in_git_ignore:
                     continue
 
             # Ignore hidden files that start with .
-            if not path_has_hidden_dir(name):
-                print(current_file_dir)
+            print(path_has_hidden_dir(current_file))
+            if not path_has_hidden_dir(current_file):
+                print(current_file)
 
     return 0
 
