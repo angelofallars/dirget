@@ -75,9 +75,9 @@ def path_has_hidden_dir(directory: str) -> bool:
 def main() -> int:
     git_rootdir = fetch_git_rootdir()
 
+    # If not in a git repo, simply get the current directory
     if git_rootdir is None:
-        stderr.write("ERROR: You are not in a git repository.\n")
-        return 1
+        git_rootdir = "./"
 
     git_ignore = get_git_ignore(git_rootdir)
 
