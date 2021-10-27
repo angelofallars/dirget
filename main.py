@@ -1,6 +1,7 @@
 #!/bin/python3
-"""Recursively search directories until a .git folder is found,
-   then list the files with `ls -R`"""
+"""
+List all of the files in the current Git repository, perfect for piping
+"""
 import os
 import re
 from sys import stderr
