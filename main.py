@@ -62,9 +62,6 @@ def main() -> int:
     # List all files from the current git directory recursively
     for pwd, dirs, files in os.walk(git_rootdir, topdown=False):
 
-        if path_has_hidden_dir(pwd):
-            continue
-
         for name in files:
             # [2:] index to remove ./ in start of file
             current_file_dir = os.path.join(pwd, name)[2:]
@@ -81,7 +78,7 @@ def main() -> int:
                     continue
 
             # Ignore hidden files that start with .
-            if name[0] != ".":
+            if not path_has_hidden_dir(name):
                 print(current_file_dir)
 
     return 0
