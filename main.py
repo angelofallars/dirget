@@ -6,27 +6,16 @@ import re
 from sys import stderr
 
 
-def path_has_hidden_dir(directory: str) -> bool:
-    hidden_dir_regex = re.compile(r"""
-                                     # Case 1
-                                     (
-                                        .*      # Anything before
-                                        /       # Forward slash
-                                        \.      # Period
-                                        [^/\.]  # Ignore ./ and ../
-                                        .*      # Anything after
+def fetch_git_rootdir(relative_directory: str = "./") -> str | None:
+    directory_files = os.listdir(relative_directory)
+    absolute_directory = os.path.abspath(relative_directory)
 
-                                     # Case 2
-                                     |
-                                        ^\.     # Just a period at the start
-                                        [^/\.]  # Ignore ./ and ../
-                                        .*      # Anything after
-                                     )
-                                   """, re.VERBOSE)
-    if hidden_dir_regex.match(directory):
-        return True
+    if ".git" in directory_files:
+        return relative_directory
+    elif absolute_directory == '/':  # '/' = the root dir in Unix-based systems
+        return None
     else:
-        return False
+        return fetch_git_rootdir(relative_directory + "../")
 
 
 # Return the specifications in the .gitignore file if it exists,
@@ -53,16 +42,28 @@ def get_git_ignore(directory: str) -> list[str] | None:
         return None
 
 
-def fetch_git_rootdir(relative_directory: str = "./") -> str | None:
-    directory_files = os.listdir(relative_directory)
-    absolute_directory = os.path.abspath(relative_directory)
+def path_has_hidden_dir(directory: str) -> bool:
+    hidden_dir_regex = re.compile(r"""
+                                     # Case 1
+                                     (
+                                        .*      # Anything before
+                                        /       # Forward slash
+                                        \.      # Period
+                                        [^/\.]  # Ignore ./ and ../
+                                        .*      # Anything after
 
-    if ".git" in directory_files:
-        return relative_directory
-    elif absolute_directory == '/':  # '/' = the root dir in Unix-based systems
-        return None
+                                     # Case 2
+                                     |
+                                        ^\.     # Just a period at the start
+                                        [^/\.]  # Ignore ./ and ../
+                                        .*      # Anything after
+                                     )
+                                   """, re.VERBOSE)
+
+    if hidden_dir_regex.match(directory):
+        return True
     else:
-        return fetch_git_rootdir(relative_directory + "../")
+        return False
 
 
 def main() -> int:
