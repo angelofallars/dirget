@@ -7,7 +7,22 @@ from sys import stderr
 
 
 def path_has_hidden_dir(directory: str) -> bool:
-    hidden_dir_regex = re.compile(r"(.*/\.[^/\.].*|^\.)")
+    hidden_dir_regex = re.compile(r"""
+                                     # Case 1
+                                     (
+                                        .*      # Anything before
+                                        /       # Forward slash
+                                        \.      # Period
+                                        [^/\.]  # Ignore ./ and ../
+                                        .*      # Anything after
+
+                                     # Case 2
+                                     |
+                                        ^\.     # Just a period at the start
+                                        [^/\.]  # Ignore ./ and ../
+                                        .*      # Anything after
+                                     )
+                                   """, re.VERBOSE)
     if hidden_dir_regex.match(directory):
         return True
     else:
@@ -77,8 +92,6 @@ def main() -> int:
                 if file_in_git_ignore:
                     continue
 
-            # Ignore hidden files that start with .
-            print(path_has_hidden_dir(current_file))
             if not path_has_hidden_dir(current_file):
                 print(current_file)
 
