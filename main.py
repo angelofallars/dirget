@@ -5,7 +5,7 @@ List all of the files in the current Git repository, perfect for piping
 import os
 import re
 from sys import stderr
-import timer
+from timer import Timer
 
 
 def fetch_git_rootdir(relative_directory: str = "./") -> str | None:
@@ -74,13 +74,17 @@ def path_has_hidden_dir(directory: str) -> bool:
 
 
 def main() -> int:
+    timer = Timer()
+
     git_rootdir = fetch_git_rootdir()
+    print(f"fetch_git_root_dir completed in {timer.break_lap()} s")
 
     if git_rootdir is None:
         stderr.write("ERROR: You are not in a git repository.\n")
         return 1
 
     git_ignore = get_git_ignore(git_rootdir)
+    print(f"get_git_ignore completed in {timer.break_lap()} s")
 
     # List all files from the current git directory recursively
     for pwd, dirs, files in os.walk(git_rootdir, topdown=False):
