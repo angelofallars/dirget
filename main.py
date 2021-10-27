@@ -41,16 +41,14 @@ def get_git_ignore(directory: str) -> list[str] | None:
 
 def main() -> int:
     current_dir = "./"
+    current_dir_files = os.listdir(current_dir)
 
     # Search up until a folder with .git is found
-    while True:
-        current_dir_files = os.listdir(current_dir)
+    while ".git" not in current_dir_files:
+        # Go up one directory
+        current_dir += "../"
 
-        if ".git" in current_dir_files:
-            break
-        else:
-            # Go up one directory
-            current_dir += "../"
+        current_dir_files = os.listdir(current_dir)
 
         if os.path.abspath(current_dir) == '/':
             stderr.write("ERROR: You are not in a git repository.\n")
