@@ -18,9 +18,8 @@ def fetch_git_rootdir(relative_directory: str = "./") -> str | None:
         return fetch_git_rootdir(relative_directory + "../")
 
 
-# Return the specifications in the .gitignore file if it exists,
-# otherwise return none
-def get_git_ignore(directory: str) -> list[str] | None:
+# Return the specifications in the .gitignore file
+def get_git_ignore(directory: str) -> list[str]:
     git_ignore_path = os.path.join(directory, ".gitignore")
     git_ignore = []
 
@@ -36,10 +35,16 @@ def get_git_ignore(directory: str) -> list[str] | None:
         for i in range(len(git_ignore)):
             git_ignore[i] = git_ignore[i][:-2]
 
-        return git_ignore
+    # An empty list is returned if no .gitignore file found
+    return git_ignore
 
-    else:
-        return None
+
+def file_in_git_ignore(file: str, git_ignore: list[str]) -> bool:
+    for pattern in git_ignore:
+        if pattern in file:
+            return True
+
+    return False
 
 
 def path_has_hidden_dir(directory: str) -> bool:
@@ -81,19 +86,9 @@ def main() -> int:
         for file_name in files:
             # [2:] index to remove ./ in start of file
             current_file = os.path.join(pwd, file_name)[2:]
-            file_in_git_ignore = False
 
-            # Ignore files listed in .gitignore
-            if git_ignore is not None:
-                for pattern in git_ignore:
-                    if pattern in current_file:
-                        file_in_git_ignore = True
-                        break
-
-                if file_in_git_ignore:
-                    continue
-
-            if not path_has_hidden_dir(current_file):
+            if not file_in_git_ignore(current_file, git_ignore) and \
+               not path_has_hidden_dir(current_file):
                 print(current_file)
 
     return 0
