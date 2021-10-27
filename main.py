@@ -5,6 +5,7 @@ List all of the files in the current Git repository, perfect for piping
 import os
 import re
 from sys import stderr
+import timer
 
 
 def fetch_git_rootdir(relative_directory: str = "./") -> str | None:
@@ -83,6 +84,12 @@ def main() -> int:
 
     # List all files from the current git directory recursively
     for pwd, dirs, files in os.walk(git_rootdir, topdown=False):
+
+        # Improve performance by checking if the working directory
+        # is hidden or in .gitignore right away
+        if file_in_git_ignore(pwd, git_ignore) or \
+           path_has_hidden_dir(pwd):
+            continue
 
         for file_name in files:
             # [2:] index to remove ./ in start of file
