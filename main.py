@@ -77,8 +77,8 @@ def list_files_recursively(root_directory: str, gitignore: list[str]) -> None:
         while i < len(dirs):
             directory = "".join([dirs[i], "/"])
 
-            if path_in_gitignore(directory, gitignore) or \
-               path_has_hidden_dir(directory):
+            if path_has_hidden_dir(directory) or \
+               path_in_gitignore(directory, gitignore):
 
                 dirs.remove(dirs[i])
                 continue
@@ -90,8 +90,8 @@ def list_files_recursively(root_directory: str, gitignore: list[str]) -> None:
                                for file in files]
 
         for file in file_relative_paths:
-            if path_in_gitignore(file, gitignore) or \
-               path_has_hidden_dir(file):
+            if path_has_hidden_dir(file) or \
+               path_in_gitignore(file, gitignore):
                 continue
             else:
                 print(file)
