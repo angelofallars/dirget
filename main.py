@@ -7,47 +7,43 @@ import re
 
 
 def fetch_git_rootdir(relative_directory: str = "./") -> str | None:
-    directory_files = os.listdir(relative_directory)
     absolute_directory = os.path.abspath(relative_directory)
+    directory_files = os.listdir(relative_directory)
 
     if ".git" in directory_files:
         return relative_directory
-    elif absolute_directory == '/':  # '/' = the root dir in Unix-based systems
+    # When we reach the root folder '/', return None
+    elif absolute_directory == '/':
         return None
     else:
         return fetch_git_rootdir(relative_directory + "../")
 
 
-# Return the specifications in the .gitignore file
-def detect_git_ignore(directory: str) -> list[str]:
-    git_ignore_path = os.path.join(directory, ".gitignore")
-    git_ignore = []
+def find_gitignore_patterns(git_root_directory: str) -> list[str]:
+    gitignore_path = os.path.join(git_root_directory, ".gitignore")
 
-    if os.path.exists(git_ignore_path):
-        git_ignore_raw = open(git_ignore_path).readlines()
+    if os.path.exists(gitignore_path):
+        with open(gitignore_path) as gitignore_file:
+            gitignore_patterns = [pattern[:-2] for pattern in  # [:-2] removes
+                                                               # trailing '\n'
+                                  gitignore_file.readlines()
+                                  if pattern[:-2] != ""]  # Remove blank lines
 
-        for i in range(len(git_ignore_raw)):
-            # Remove blank lines
-            if git_ignore_raw[i] != "\n":
-                git_ignore.append(git_ignore_raw[i])
+        return gitignore_patterns
 
-        # Remove the ending '\n' from entries
-        for i in range(len(git_ignore)):
-            git_ignore[i] = git_ignore[i][:-2]
-
-    # An empty list is returned if no .gitignore file found
-    return git_ignore
+    # If no .gitignore file found, return an empty list
+    else:
+        return []
 
 
-def file_in_git_ignore(file: str, git_ignore: list[str]) -> bool:
-    for pattern in git_ignore:
+def path_in_gitignore(file: str, gitignore: list[str]) -> bool:
+    for pattern in gitignore:
         if pattern in file:
             return True
-
     return False
 
 
-def path_has_hidden_dir(directory: str) -> bool:
+def path_has_hidden_dir(path: str) -> bool:
     hidden_dir_regex = re.compile(r"""
                                      # Case 1
                                      (
@@ -64,47 +60,52 @@ def path_has_hidden_dir(directory: str) -> bool:
                                         .*      # Anything after
                                      )
                                    """, re.VERBOSE)
+    path_is_hidden = hidden_dir_regex.match(path)
 
-    if hidden_dir_regex.match(directory):
+    if path_is_hidden:
         return True
     else:
         return False
 
 
-def list_files_recursively(root_directory: str, git_ignore: list[str]) -> None:
-    for pwd, dirs, files in os.walk(root_directory, topdown=True):
+def list_files_recursively(root_directory: str, gitignore: list[str]) -> None:
+    for current_dir, dirs, files in os.walk(root_directory):
 
-        # Tweak performance by removing the hidden/ignored folders
-        # right away so os.walk doesn't access them
+        # Boost performance by removing the hidden/ignored folders
+        # so os.walk doesn't access them and waste time
         i = 0
         while i < len(dirs):
-            directory = dirs[i]
+            directory = "".join([dirs[i], "/"])
 
-            if file_in_git_ignore("".join([directory, "/"]), git_ignore) or \
+            if path_in_gitignore(directory, gitignore) or \
                path_has_hidden_dir(directory):
-                dirs.remove(directory)
+
+                dirs.remove(dirs[i])
                 continue
 
             i += 1
 
-        for file_name in files:
-            # [2:] index to remove ./ in start of file
-            current_file = os.path.join(pwd, file_name)[2:]
+        # [2:] index to remove ./ in start of file
+        file_relative_paths = [os.path.join(current_dir, file)[2:]
+                               for file in files]
 
-            if not file_in_git_ignore(current_file, git_ignore) and \
-               not path_has_hidden_dir(current_file):
-                print(current_file)
+        for file in file_relative_paths:
+            if path_in_gitignore(file, gitignore) or \
+               path_has_hidden_dir(file):
+                continue
+            else:
+                print(file)
 
 
 def main() -> int:
-    git_rootdir = fetch_git_rootdir()
+    root_dir = fetch_git_rootdir()
 
-    if git_rootdir is None:
-        git_rootdir = "./"
+    if root_dir is None:
+        root_dir = "./"
 
-    git_ignore = detect_git_ignore(git_rootdir)
+    gitignore_patterns = find_gitignore_patterns(root_dir)
 
-    list_files_recursively(git_rootdir, git_ignore)
+    list_files_recursively(root_dir, gitignore_patterns)
 
     return 0
 
