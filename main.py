@@ -4,7 +4,6 @@ List all of the files in the current Git repository, perfect for piping
 """
 import os
 import re
-from sys import stderr
 
 
 def fetch_git_rootdir(relative_directory: str = "./") -> str | None:
@@ -20,7 +19,7 @@ def fetch_git_rootdir(relative_directory: str = "./") -> str | None:
 
 
 # Return the specifications in the .gitignore file
-def get_git_ignore(directory: str) -> list[str]:
+def detect_git_ignore(directory: str) -> list[str]:
     git_ignore_path = os.path.join(directory, ".gitignore")
     git_ignore = []
 
@@ -72,25 +71,18 @@ def path_has_hidden_dir(directory: str) -> bool:
         return False
 
 
-def main() -> int:
-    git_rootdir = fetch_git_rootdir()
-
-    # If not in a git repo, simply get the current directory
-    if git_rootdir is None:
-        git_rootdir = "./"
-
-    git_ignore = get_git_ignore(git_rootdir)
-
-    # List all files from the current git directory recursively
-    for pwd, dirs, files in os.walk(git_rootdir, topdown=True):
+def list_files_recursively(root_directory: str, git_ignore: list[str]) -> None:
+    for pwd, dirs, files in os.walk(root_directory, topdown=True):
 
         # Tweak performance by removing the hidden/ignored folders
         # right away so os.walk doesn't access them
         i = 0
         while i < len(dirs):
-            if file_in_git_ignore("".join([dirs[i], "/"]), git_ignore) or \
-               path_has_hidden_dir(dirs[i]):
-                dirs.remove(dirs[i])
+            directory = dirs[i]
+
+            if file_in_git_ignore("".join([directory, "/"]), git_ignore) or \
+               path_has_hidden_dir(directory):
+                dirs.remove(directory)
                 continue
 
             i += 1
@@ -102,6 +94,17 @@ def main() -> int:
             if not file_in_git_ignore(current_file, git_ignore) and \
                not path_has_hidden_dir(current_file):
                 print(current_file)
+
+
+def main() -> int:
+    git_rootdir = fetch_git_rootdir()
+
+    if git_rootdir is None:
+        git_rootdir = "./"
+
+    git_ignore = detect_git_ignore(git_rootdir)
+
+    list_files_recursively(git_rootdir, git_ignore)
 
     return 0
 
