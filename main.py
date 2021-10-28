@@ -4,6 +4,7 @@ List all of the files in the current Git repository, perfect for piping
 """
 import os
 import re
+from sys import argv as command_arguments
 
 
 def fetch_git_rootdir(relative_directory: str = "./") -> str | None:
@@ -68,30 +69,35 @@ def path_has_hidden_dir(path: str) -> bool:
         return False
 
 
-def list_files_recursively(root_directory: str, gitignore: list[str]) -> None:
+def list_files_recursively(root_directory: str,
+                           gitignore: list[str],
+                           show_hidden_files: bool = False) -> None:
+
     for current_dir, dirs, files in os.walk(root_directory):
 
         # Boost performance by removing the hidden/ignored folders
-        # so os.walk doesn't access them and waste time
-        i = 0
-        while i < len(dirs):
-            directory = "".join([dirs[i], "/"])
+        # right away so os.walk doesn't access them and waste time
+        if not show_hidden_files:
+            i = 0
+            while i < len(dirs):
+                directory = "".join([dirs[i], "/"])
 
-            if path_has_hidden_dir(directory) or \
-               path_in_gitignore(directory, gitignore):
+                if path_has_hidden_dir(directory) or \
+                   path_in_gitignore(directory, gitignore):
 
-                dirs.remove(dirs[i])
-                continue
+                    dirs.remove(dirs[i])
+                    continue
 
-            i += 1
+                i += 1
 
         # [2:] index to remove ./ in start of file
         file_relative_paths = [os.path.join(current_dir, file)[2:]
                                for file in files]
 
         for file in file_relative_paths:
-            if path_has_hidden_dir(file) or \
-               path_in_gitignore(file, gitignore):
+            if (not show_hidden_files and
+                (path_has_hidden_dir(file) or
+                 path_in_gitignore(file, gitignore))):
                 continue
             else:
                 print(file)
@@ -103,9 +109,11 @@ def main() -> int:
     if root_dir is None:
         root_dir = "./"
 
+    show_hidden_files = "-a" in command_arguments
+
     gitignore_patterns = find_gitignore_patterns(root_dir)
 
-    list_files_recursively(root_dir, gitignore_patterns)
+    list_files_recursively(root_dir, gitignore_patterns, show_hidden_files)
 
     return 0
 
